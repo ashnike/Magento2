@@ -1,0 +1,185 @@
+#php installation script
+sudo apt update
+nano php_script.sh
+sudo chmod +x php_script.sh
+./php_script.sh
+
+#modify the PHP configuration settings to utilize less resources
+sudo sed -i -e 's/memory_limit = 128M/memory_limit = 1G/g' /etc/php/8.1/fpm/php.ini
+sudo sed -i -e 's/max_execution_time = 30/max_execution_time = 1800/g' /etc/php/8.1/fpm/php.ini
+sudo sed -i -e 's/zlib.output_compression = Off/zlib.output_compression = On/g' /etc/php/8.1/fpm/php.ini
+sudo sed -i -e 's/memory_limit = 128M/memory_limit = 1G/g' /etc/php/8.1/cli/php.ini
+sudo sed -i -e 's/max_execution_time = 30/max_execution_time = 1800/g' /etc/php/8.1/cli/php.ini
+sudo sed -i -e 's/zlib.output_compression = Off/zlib.output_compression = On/g' /etc/php/8.1/cli/php.ini
+sudo systemctl restart php8.1-fpm
+
+#Installing Elastic Search 
+sudo apt install openjdk-17-jdk
+sudo apt install apt-transport-https ca-certificates gnupg2
+sudo wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+sudo apt update && sudo apt install elasticsearch
+sudo nano /etc/elasticsearch/elasticsearch.yml
+#make the changes in the file 
+  node.name: "My First Node"
+  cluster.name: my-application
+  network.host: 127.0.0.1
+  http.port: 9200
+   
+sudo nano /etc/elasticsearch/jvm.options
+#make the changes in the file 
+ -Xms1g
+ -Xmx1g
+sudo systemctl daemon-reload
+sudo systemctl enable elasticsearch.service
+sudo systemctl start elasticsearch.service
+sudo systemctl status elasticsearch.service
+curl -X GET "localhost:9200/"
+ 
+#MYSQL 8 Installation 
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.29-1_all.deb
+#use TAB KEY to select options, select ok and then use enter key
+sudo apt update
+sudo apt install mysql-server
+mysql -u root -p
+
+    mysql> CREATE USER 'magentoad'@'localhost' IDENTIFIED BY 'ash12';
+    mysql> CREATE DATABASE magentodb;
+    mysql> GRANT ALL PRIVILEGES ON magentodb.* TO 'magentoad'@'localhost';
+    mysql> FLUSH PRIVILEGES;
+
+#Redis-Server Installation
+curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+sudo apt update
+sudo apt install redis
+redis-server -v
+redis-cli
+  ACL SETUSER default on >ash112233
+  AUTH ash112233
+  exit
+#Nginx Installation
+sudo apt install nginx -y
+
+#Composer Installtion 
+sudo curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar  /usr/local/bin/composer
+composer -V
+
+#Make an account here
+https://commercemarketplace.adobe.com/
+#In the profile section, Under marketplace select access keys.Then click on create a new access key, Give it a name , there you will get your public and private key for the next step in installation.
+
+#Magento2 Installtion
+cd /var/www/html/
+sudo composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition=2.4.6 /var/www/html/magento2
+cd /var/www/html/magento2
+sudo find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} +
+sudo find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} +
+sudo chmod u+x bin/magento
+
+sudo php bin/magento setup:install \
+--base-url=http://Instance_IP/ \
+--use-secure=1 \
+--base-url-secure=https://Instance_IP/ \
+--db-host=localhost \
+--db-name=magentodb \
+--db-user=magentoad \
+--db-password=ash12 \
+--admin-firstname=admin \
+--admin-lastname=admin \
+--admin-email=admin@admin.com \
+--admin-user=admin \
+--admin-password=admin123 \
+--language=en_US \
+--currency=USD \
+--timezone=America/Chicago \
+--use-rewrites=1 \
+--elasticsearch-host=localhost \
+--elasticsearch-port=9200 \
+--session-save=redis \
+--session-save-redis-db=0 \
+--session-save-redis-password=ash112233 \
+--cache-backend=redis \
+--cache-backend-redis-db=2 \
+--cache-backend-redis-password=ash112233 \
+--page-cache=redis \
+--page-cache-redis-db=4 \
+--page-cache-redis-password=ash112233
+
+#(OPTIONAL if you want to create a user)
+sudo adduser test
+sudo addgroup test-grp
+sudo usermod -aG clp test
+sudo nano /etc/nginx/nginx.conf
+#add the newly created user                                                                          
+  user test;
+
+sudo nano /etc/php/8.1/fpm/pool.d/www.conf
+ user = test
+ group = test-grp
+ listen.owner = test
+ listen.group = test-grp
+ listen.mode = 0660
+
+#Docker installtion for PHPMYADMIN
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+sudo usermod -aG docker $USER
+exit
+
+#Login again to reflect changes
+ls -l /run/mysqld/mysqld.sock
+docker run --name phpmyadmin -p 8082:80 -d -e PMA_SOCKET=/run/mysqld/mysqld.sock -v /run/mysqld/mysqld.sock:/run/mysqld/mysqld.sock phpmyadmin:latest
+
+#before varnish installation replace the nginx server block info with the data given in nginx-conf folder of repo
+#Varnish Installation
+sudo apt install varnish
+sudo apt update
+sudo service varnish start
+sudo service varnish status
+sudo nano  etc/default/varnish
+#change the port to 80
+  DAEMON_OPTS="-a :80 \   
+             -T localhost:6082 \
+             -f /etc/varnish/default.vcl \ 
+             -S /etc/varnish/secret \
+             -s malloc,2048m"  # -a : <set_port>,  -s malloc,<cache_memory>
+
+sudo systemctl daemon-reload
+sudo nano /etc/systemd/system/multi-user.target.wants/varnish.service
+#change port 6081 to port 80
+sudo systemctl daemon-reload
+sudo service varnish restart
+
+#To know the admin url
+sudo php /var/www/magento/bin/magento info:adminuri
+#To Disable 2 fact authentication
+sudo php bin/magento indexer:reindex && php bin/magento se:up && php bin/magento se:s:d -f && php bin/magento c:f && php bin/magento module:disable Magento_TwoFactorAuth
+sudo php bin/magento mod:dis Magento_AdminAdobeImsTwoFactorAuth Magento_TwoFactorAuth
+
+#In Magento 2 admin dashboard, go to Store > Setting > Configuration > Advanced > System
+#Next, deselect use system value and choose Varnish as Caching application
+#Leave the rest as default
+sudo nginx -t
+sudo systemctl restart nginx
+
+sudo php bin/magento cache:flush
+sudo rm -rf var/cache/*
+sudo rm -rf var/page_cache/*
+
+curl -IL http://3.111.18.126/
+#check for varnish header
+
+
+
+
+
+
+
+
+
