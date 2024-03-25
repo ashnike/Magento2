@@ -59,8 +59,14 @@ redis-cli
   ACL SETUSER default on >ash112233
   AUTH ash112233
   exit
+
 #Nginx Installation
 sudo apt install nginx -y
+sudo mkdir /etc/nginx/ssl
+sudo openssl genpkey -algorithm RSA -out /etc/nginx/ssl/private.key -aes256
+sudo openssl req -new -key /etc/nginx/ssl/private.key -out /etc/nginx/ssl/certificate.csr
+sudo openssl x509 -req -days 365 -in  /etc/nginx/ssl/certificate.csr -signkey /etc/nginx/ssl/private.key -out /etc/nginx/ssl/certificate.crt
+
 
 #Composer Installtion 
 sudo curl -sS https://getcomposer.org/installer | php
