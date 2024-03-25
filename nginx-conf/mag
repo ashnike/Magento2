@@ -1,0 +1,38 @@
+upstream fastcgi_backend {
+    server unix:/run/php/php8.1-fpm.sock;
+}
+
+upstream phpmyadmin {
+    server localhost:8082;
+}
+
+server {
+    listen 80;
+    server_name #public_ip_of_ec2;
+
+    set $MAGE_ROOT /var/www/html/magento2;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name #public_ip_of_ec2;
+
+    ssl_certificate /etc/nginx/ssl/certificate.crt;
+    ssl_certificate_key /etc/nginx/ssl/private.key;
+
+    set $MAGE_ROOT /var/www/html/magento2;
+
+    location /phpmyadmin/ {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Scheme $scheme;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_set_header X-Forwarded-For    $remote_addr;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_pass http://phpmyadmin;
+        rewrite ^/phpmyadmin(/.*)$ $1 break;
+    }
+
+    include /var/www/html/magento2/nginx.conf.sample;
+}
+
