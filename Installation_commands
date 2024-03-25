@@ -172,7 +172,7 @@ sudo php bin/magento cache:flush
 sudo rm -rf var/cache/*
 sudo rm -rf var/page_cache/*
 
-curl -IL http://3.111.18.126/
+curl -IL http://Instance_ip/
 #check for varnish header
 
 
